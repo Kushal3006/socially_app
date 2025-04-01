@@ -1,12 +1,58 @@
+"use client";
+
 import { BellIcon, HomeIcon, UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { SignInButton, UserButton } from "@clerk/nextjs";
+import { SignInButton, UserButton, useAuth, useUser } from "@clerk/nextjs";
 import { ModeToggle } from "./ModelToggle";
-import { currentUser } from "@clerk/nextjs/server";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
-async function DesktopNavbar() {
-  const user = await currentUser();
+function DesktopNavbar() {
+  const { isSignedIn } = useAuth();
+  const { user } = useUser();
+  const [username, setUsername] = useState("");
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+  const router = useRouter();
+  
+  // Fetch user profile when authenticated
+  useEffect(() => {
+    async function fetchUserProfile() {
+      if (!isSignedIn) return;
+      
+      try {
+        setIsLoadingProfile(true);
+        const res = await fetch('/api/users/profile');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.user?.username) {
+            setUsername(data.user.username);
+          } else {
+            // Fallback to Clerk username
+            setUsername(
+              user?.username || 
+              (user?.emailAddresses[0]?.emailAddress 
+                ? user.emailAddresses[0].emailAddress.split("@")[0] 
+                : "")
+            );
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching user profile:", error);
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    }
+
+    fetchUserProfile();
+  }, [isSignedIn, user]);
+
+  const handleProfileClick = (event: React.MouseEvent) => {
+    if (!username) {
+      event.preventDefault();
+      router.push('/profiles');
+    }
+  };
 
   return (
     <div className="hidden md:flex items-center space-x-4">
@@ -19,7 +65,7 @@ async function DesktopNavbar() {
         </Link>
       </Button>
 
-      {user ? (
+      {isSignedIn ? (
         <>
           <Button variant="ghost" className="flex items-center gap-2" asChild>
             <Link href="/notifications">
@@ -27,17 +73,26 @@ async function DesktopNavbar() {
               <span className="hidden lg:inline">Notifications</span>
             </Link>
           </Button>
-          <Button variant="ghost" className="flex items-center gap-2" asChild>
-            <Link
-              href={`/profile/${
-                user.username ?? user.emailAddresses[0].emailAddress.split("@")[0]
-              }`}
-            >
-              <UserIcon className="w-4 h-4" />
-              <span className="hidden lg:inline">Profile</span>
-            </Link>
+          <Button 
+            variant="ghost" 
+            className="flex items-center gap-2"
+            disabled={isLoadingProfile}
+            onClick={handleProfileClick}
+            asChild={!!username}
+          >
+            {username ? (
+              <Link href={`/profiles/${username}`}>
+                <UserIcon className="w-4 h-4" />
+                <span className="hidden lg:inline">Profile</span>
+              </Link>
+            ) : (
+              <>
+                <UserIcon className="w-4 h-4" />
+                <span className="hidden lg:inline">Profile</span>
+              </>
+            )}
           </Button>
-          <UserButton />
+          <UserButton afterSignOutUrl="/" />
         </>
       ) : (
         <SignInButton mode="modal">

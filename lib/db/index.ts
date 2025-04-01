@@ -13,7 +13,7 @@ const connectionString = process.env.DATABASE_URL;
 const getClient = () => {
   try {
     const client = connectionString 
-      ? postgres(connectionString, { ssl: 'require' })
+      ? postgres(connectionString, { ssl: false }) // Disable SSL
       : postgres({
           host: process.env.DB_HOST || 'localhost',
           port: Number(process.env.DB_PORT) || 5432,
