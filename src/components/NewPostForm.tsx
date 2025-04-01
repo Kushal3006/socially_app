@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
 import { Card, CardContent, CardFooter } from "./ui/card";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
@@ -50,11 +50,40 @@ export function NewPostForm({
   onPostCreated?: (post: Post) => void 
 }) {
   const { userId, isSignedIn } = useAuth();
+  const { user } = useUser();
   const router = useRouter();
   const [content, setContent] = useState("");
   const [image, setImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [profileData, setProfileData] = useState<{
+    name: string;
+    image: string | null;
+  } | null>(null);
+
+  // Fetch user profile data
+  useEffect(() => {
+    if (!isSignedIn) return;
+
+    async function fetchUserProfile() {
+      try {
+        const res = await fetch('/api/users/profile');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.user) {
+            setProfileData({
+              name: data.user.name,
+              image: data.user.image
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching user profile:", error);
+      }
+    }
+
+    fetchUserProfile();
+  }, [isSignedIn]);
 
   // For demo purposes - in a real app you'd use a proper image upload service
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -173,6 +202,15 @@ export function NewPostForm({
     }
   };
 
+  // Get initials for avatar fallback
+  const getInitials = (name: string) => {
+    return name
+      ?.split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase() || "";
+  };
+
   if (!isSignedIn) {
     return (
       <Card>
@@ -190,8 +228,13 @@ export function NewPostForm({
         <CardContent className="pt-6">
           <div className="flex gap-4">
             <Avatar>
-              <AvatarImage src={""} alt="Your profile" />
-              <AvatarFallback></AvatarFallback>
+              <AvatarImage 
+                src={profileData?.image || user?.imageUrl || ""} 
+                alt="Your profile" 
+              />
+              <AvatarFallback>
+                {profileData?.name ? getInitials(profileData.name) : user?.firstName?.[0]}
+              </AvatarFallback>
             </Avatar>
             <div className="flex-1">
               <Textarea
