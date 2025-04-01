@@ -179,7 +179,7 @@ export function EditProfileForm({ user }: { user: User }) {
             />
           </div>
         </CardContent>
-        <CardFooter className="flex justify-between">
+        <CardFooter className="flex justify-between mt-3">
           <Button
             type="button"
             variant="outline"
