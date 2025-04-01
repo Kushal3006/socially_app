@@ -29,6 +29,20 @@
       "when": 1743425788952,
       "tag": "0003_curly_omega_red",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1743478500789,
+      "tag": "0004_outgoing_crystal",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1743497738365,
+      "tag": "0005_special_starhawk",
+      "breakpoints": true
     }
   ]
 }
